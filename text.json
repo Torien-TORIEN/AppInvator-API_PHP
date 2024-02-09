@@ -1,0 +1,33 @@
+{
+    "type": "div",
+    "text": "\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\tPlateForme ENICarthage\t\t\t\n\t\t\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tPersonnaliser\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tS’inscrire\n\t\t\t\t\t\t\t\t\tConnexion\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tCopier shortlink\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\tSignaler ce contenu\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\tGérer les abonnements\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t",
+    "styles": "",
+    "elements": [
+        {
+            "type": "div",
+            "text": "\n\t\t\t\t\t\t\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\tPlateForme ENICarthage\t\t\t\n\t\t\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tPersonnaliser\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tS’inscrire\n\t\t\t\t\t\t\t\t\tConnexion\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tCopier shortlink\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\tSignaler ce contenu\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\tGérer les abonnements\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t",
+            "styles": "",
+            "elements": [
+                {
+                    "type": "div",
+                    "text": "\n\t\t\t\n\t\t\t\t\t\t\t\tPlateForme ENICarthage\t\t\t\n\t\t",
+                    "styles": "",
+                    "elements": [
+                        {
+                            "type": "a",
+                            "text": "\n\t\t\t\t\t\t\t\tPlateForme ENICarthage\t\t\t",
+                            "styles": "",
+                            "elements": [
+                                {
+                                    "type": "img",
+                                    "text": "",
+                                    "styles": ""
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
