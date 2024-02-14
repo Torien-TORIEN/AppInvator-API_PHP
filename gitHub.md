@@ -10,3 +10,10 @@ git push -u origin main
 git remote add origin https://github.com/Torien-TORIEN/AppInvator-API_PHP.git
 git branch -M main
 git push -u origin main
+
+
+#Create Tag and push 
+
+git tag -a V1.0 -m "message"
+
+git push origin V1.0

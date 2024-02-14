@@ -25,6 +25,68 @@ function getWebContent($url)
 // Récupère le contenu HTML de la page
 $htmlContent = getWebContent($url);
 
+
+
+//Exemple 
+$htmlContent='<!DOCTYPE html>
+<html>
+<head>
+<style>
+.button {
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+.button1 {background-color: #04AA6D;} 
+.button2 {background-color: #008CBA;} 
+</style>
+</head>
+<body>
+
+<div>
+    <div>
+        <h1 name="h1">The button element - Styled with CSS</h1>
+        <h3 name="h3">Aller à W3Schools , cliquer <a href="https://www.w3schools.com">Ici</a><h3>
+        <p name="p">Change the background color of a button with the background-color property:</p>
+    </div>
+</div>
+
+<div>
+ <img src="https://i.ytimg.com/vi/JJt9tVcrXRw/maxresdefault.jpg" alt="LOGO">
+  <button class="button button1">Green</button>
+  <input type="button"class="button button2" value="Blue">
+</div>
+
+<div>
+	<form action="">
+      <label for="fname">First name:</label>
+      <input type="text" id="fname" name="fname" value="TOTO" readonly><br><br>
+      <label for="lname">Last name:</label>
+      <input type="text" id="lname" name="lname" placeholder="your name"><br><br>
+      <label for="pwd">Password:</label>
+      <input type="password" id="pwd" name="pwd"><br><br>
+      <label for="w3review">Review of W3Schools:</label>
+        <textarea id="w3review" name="w3review" rows="4" cols="50">
+        At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.
+        </textarea>
+      <input type="submit" value="Submit">
+      <button class="button button1"><a href="https://www.w3schools.com">Visit W3Schools.com!</a></button>
+    </form>
+</div>
+
+
+
+</body>
+</html>
+';
+
 // Utilise une classe DOMDocument pour analyser le HTML
 $doc = new DOMDocument();
 @$doc->loadHTML($htmlContent);
@@ -35,55 +97,57 @@ $data = [];
 // Fonction récursive pour extraire les données et les styles pour les balises spécifiques
 function extractElementData($element, $doc)
 {
-    $elementData = [
-        'type' => $element->tagName,
-        'text' => $element->textContent,
-    ];
 
-    // Récupère les styles CSS associés à l'élément
-    $styles = '';
-    $styleAttribute = $element->getAttribute('style');
-    if (!empty($styleAttribute)) {
-        $styles .= $styleAttribute;
+    $elementData=[];
+	//Tester Style CSS
+	$styleCSS=[];
+	if(($Style=getStyle($element))!=null ){
+        $styleCSS=$Style;
     }
-
-    $elementData['styles'] = $styles;
-
-    // Si l'élément a des enfants, récursion pour extraire les données des enfants
-    if ($element->hasChildNodes()) {
-        $elementData['elements'] = [];
-        foreach ($element->childNodes as $child) {
-            if ($child->nodeType === XML_ELEMENT_NODE) {
-                $elementData['elements'][] = extractElementData($child, $doc);
-            }
-        }
+	
+	
+    if(($Lyout=extractLyout($element))!=null ){
+        $elementData=$Lyout;
     }
-
-/*$elementData=[];
-    $button=extractButton($element);
-    if($button!=null){
+	
+	/*
+    if(($button=extractButton($element))!=null){
         $elementData=$button;
     //$elementData=($element);
-    }elseif(($textElement=extractElementText($element))!=null){
-        $elementData=$textElement;
+    }elseif(($Label=extractElementText($element))!=null){
+        $elementData=$Label;
+    }elseif(($TextBox=extractTextBoxElements($element))!=null){
+        $elementData=$TextBox;
+    }elseif(($PasswordTextBox=extractPasswordTextBoxElements($element))!=null){
+        $elementData=$PasswordTextBox;
+    }elseif(($Image=extractImage($element))!=null){
+        $elementData=$Image;
     }*/
+    
+
     if($elementData!=null)
         return $elementData;
+		//return $styleCSS; //Test
+}
+// Initialise un tableau pour stocker les données extraites
+$data = [];
+
+// Parcourir tous les éléments du document HTML
+$allElements = $doc->getElementsByTagName('*');
+foreach ($allElements as $element) {
+    $data[] = extractElementData($element, $doc);
 }
 
-// Définir les types d'éléments à extraire
-$elementTypes = ['div', 'span', 'a', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'tr', 'td','input','button'];
-
-// Extraire les données pour chaque type d'élément spécifié
-foreach ($elementTypes as $elementType) {
-    $elements = $doc->getElementsByTagName($elementType);
-    foreach ($elements as $element) {
-        $data[] = extractElementData($element, $doc);
-    }
-}
+// Supprimer les éléments null et ne conserver que les valeurs
+$data = removeNullElements($data);
 
 // Envoie les données sous forme de JSON
 header('Content-Type: application/json');
-echo json_encode($data);
+$json=[
+    '$Components'=>$data,
+];
+
+echo json_encode($json);
+
 
 ?>
