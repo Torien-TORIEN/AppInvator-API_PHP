@@ -1,2 +1,8 @@
 # GET 
 GET http://localhost/appinvator/?url=https://www.polytech-reseau.org/
+
+###
+GET http://localhost/appinvator/Functions/lyoutFunctions.php
+
+###
+GET http://localhost/appinvator/Tests/testRequette.php?url=https://code.travail.gouv.fr/droit-du-travail

@@ -1,25 +1,15 @@
 <?php
-// Fonction pour extraire un bouton avec les propriétés spécifiées
-function isButton($element)
-{
-    // Vérifie si l'élément est une balise <button> avec l'attribut type="button"
-    if ($element->tagName === 'button' ) {
-        return true;
-    }
 
-    // Vérifie si l'élément est une balise <input> avec l'attribut type="button" ou type="submit"
-    if ($element->tagName === 'input' && in_array($element->getAttribute('type'), ['button', 'submit'])) {
-        return true;
-    }
-
-    // Sinon, l'élément n'est pas un bouton
-    return false;
-}
+// Désactiver les avertissements
+error_reporting(E_ERROR | E_PARSE);
 
 /* Button
 * Recuperer les  buttons 
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractButton($element)
+function extractButton($element,$html)
 {
     $defaultFontSize=14.0;
     if(isButton($element)){
@@ -35,7 +25,7 @@ function extractButton($element)
             //'$BackgroundColor' => "",
             '$Visible' => true,
             '$Action'=>'',
-            'style' => $element->getAttribute('style'),
+            'style' => getStyle($element,$html)["style"],
         ];
 
         // Vérifie s'il y a un lien à l'intérieur du bouton
@@ -48,6 +38,9 @@ function extractButton($element)
             $buttonData['$Action'] = 'submit';
         }
 
+        //Mise à jour des Styles
+        $buttonData=setStyle($buttonData["style"],$buttonData);
+
         return $buttonData;
     }else{
         return null;
@@ -56,27 +49,35 @@ function extractButton($element)
 
 /* Label
 * Recuperer les  textes de  [h1-6,label,p,span,a]
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractElementText($element)
+function extractElementText($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
-    $tagNames = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p'];
+    $tagNames = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li'];
+    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea'];
+    $childMidleTagNames=['a','b','span','em','i','strong'];
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if (in_array($element->tagName, $tagNames)) {
+    if (in_array($element->tagName, $tagNames) || (in_array($element->tagName, $childMidleTagNames) && isFirstParentNotInList($element,$parentTagNamesNotAccepted))) {
         $elementData = [
             '$Type' => "Label",
-            //'$Name' => $element->getAttribute('name'),
+            '$Name' => $element->getAttribute('name'),
             '$Text' => $element->textContent, // Utilise textContent pour extraire le texte
-            //'$HeightPercent' => 20,
-            //'$WidthPercent' => 100,
+            //'$HeightPercent' => "",
+            //'$WidthPercent' => "",
+            //'$Height' => "",
+            //'$Width' => "",
             '$FontSize' => $defaultFontSize, // Taille de police par défaut
             '$FontBold' => false,
-            //'$TextColor' => [255,0,0],
-            //'$BackgroundColor' => "Blue",
+            //'$TextColor' =>"",
+            //'$BackgroundColor' => "",
             '$Visible' => true,
-            //'style' => $element->getAttribute('style'),
+            'style' => getStyle($element,$html)["style"],
+
         ];
 
         // Vérifie s'il y a un lien à l'intérieur de l'élément
@@ -84,6 +85,8 @@ function extractElementText($element)
         if ($link !== null) {
             $elementData['$Link'] = $link->getAttribute('href');
         }
+
+        if($element->tagName ==="a") $elementData['$Link'] = $element->getAttribute('href');
 
         // Si l'élément est une balise de titre, détermine le niveau et ajuste la taille de police
         if (preg_match('/h([1-6])/', $element->tagName, $matches)) {
@@ -95,6 +98,12 @@ function extractElementText($element)
                 $elementData['$FontSize'] = $headingSizeMap[$headingLevel];
             }
         }
+
+        //Met à jour les styles
+        $elementData=setStyle($elementData["style"],$elementData);
+
+        
+
     }
 
     return $elementData;
@@ -103,8 +112,11 @@ function extractElementText($element)
 
 /* TextBox
 * Recuperer les champs des textes [input, textarea]
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractTextBoxElements($element)
+function extractTextBoxElements($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
     $tagNames = ["input","textarea"];
@@ -118,8 +130,8 @@ function extractTextBoxElements($element)
             //'$Name' => $element->getAttribute('name'),
             '$Text' => $element->getAttribute('value')!=""?$element->getAttribute('value'):$element->textContent,
             '$Hint' => $element->getAttribute('placeholder'),
-            '$HeightPercent' => 20,
-            '$WidthPercent' => 50,
+            //'$HeightPercent' => 20,
+            //'$WidthPercent' => 50,
             '$FontSize' => $defaultFontSize, // Taille de police par défaut
             '$FontBold' => false,
             //'$TextColor' => "",
@@ -128,10 +140,12 @@ function extractTextBoxElements($element)
             '$MultiLine' => $isTextArea ? true : false,
             '$NumbersOnly' => false,
             '$Visible' => true,
-            //'style' => $element->getAttribute('style'),
+            'style' => getStyle($element,$html)["style"],
         ];
     }
     
+    //Mise à jour des Styles
+    $elementData=setStyle($elementData["style"],$elementData);
 
     return $elementData;
 }
@@ -139,8 +153,11 @@ function extractTextBoxElements($element)
 
 /* TextBox
 * Recuperer les champs des textes [input, textarea]
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractImage($element)
+function extractImage($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
     $elementData = [];
@@ -153,18 +170,22 @@ function extractImage($element)
             //'$Name' => $element->getAttribute('name'),
             '$AlternateText' => $element->getAttribute('alt'),
             '$Picture' => $element->getAttribute('src'),
-            //'$HeightPercent' => 30,
-            //'$WidthPercent' =>100,
+            '$HeightPercent' => preg_match('/\d+%$/', $element->getAttribute("height"),$matches)?intval(trim($matches[sizeof($matches)-1],'%')):"",
+            '$WidthPercent' =>preg_match('/\d+%$/', $element->getAttribute("width"),$matches)?intval(trim($matches[sizeof($matches)-1],'%')):100,
+            '$Height' => preg_match('/\d+px$/', $element->getAttribute("height"),$matches)?intval(trim($matches[sizeof($matches)-1],'px')):"",
+            '$Width' =>preg_match('/\d+px$/', $element->getAttribute("width"),$matches)?intval(trim($matches[sizeof($matches)-1],'px')):"",
             '$ScalePictureToFit' =>false, // Taille de police par défaut
             '$FontBold' => false,
             //'$TextColor' => "",
             //'$BackgroundColor' => "",
             '$Clickable' => false,
             '$Visible' => true,
-            //'style' => $element->getAttribute('style'),
+            'style' => getStyle($element,$html)["style"],
         ];
     }
-    
+
+    //Mise à jour des Styles
+    $elementData=setStyle($elementData["style"],$elementData);
 
     return $elementData;
 }
@@ -172,8 +193,11 @@ function extractImage($element)
 
 /* PasswordTextBox
 * Recuperer les champs de mot de passe  [input (type=password)]
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractPasswordTextBoxElements($element)
+function extractPasswordTextBoxElements($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
     $elementData = [];
@@ -186,8 +210,8 @@ function extractPasswordTextBoxElements($element)
             //'$Name' => $element->getAttribute('name'),
             '$Text' => $element->getAttribute('value'),
             '$Hint' => $element->getAttribute('placeholder'),
-            '$HeightPercent' => 10,
-            '$WidthPercent' => 100,
+            //'$HeightPercent' => 10,
+            //'$WidthPercent' => 100,
             '$FontSize' => $defaultFontSize, // Taille de police par défaut
             '$FontBold' => false,
             //'$TextColor' => "",
@@ -195,10 +219,12 @@ function extractPasswordTextBoxElements($element)
             '$ReadOnly' => $element->hasAttribute('readonly') ? true : false,
             '$NumbersOnly' => false,
             '$Visible' => true,
-           // 'style' => $element->getAttribute('style'),
+            'style' => getStyle($element,$html)["style"],
         ];
     }
     
+    //Mise à jour des Styles
+    $elementData=setStyle($elementData["style"],$elementData);
 
     return $elementData;
 }
@@ -231,49 +257,70 @@ function removeNullElements($array) {
     return $result;
 }
 
+
 /* Lyout
 * Recuperer les lyouts [div, section , article, ...] si parmi les enfants de niveau 1 de ce div il y a ces listes suivantes
 *[h1-6,label,p,span,a,button,img,table,]
 *Si l'enfant de ce tag est seulement parmis [div,section,form,article,...] on le recupère pas
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractLyout($element)
+function extractLyout($element,$html)
 {
+    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside'];
     $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
     $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
     
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if (in_array($element->tagName, ['div', 'section', 'article','form'])) {
+    if (in_array($element->tagName, $ContainerTagNames)) {
         // Initialise le contenu
         $contents = [];
+
+        $isVerticalArragement=false;
 
         // Parcours les enfants de niveau 1
         foreach ($element->childNodes as $child) {
             // Vérifie si l'enfant est une balise autorisée
-			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table'])) {
+			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table','ul','li','ol','dt','dd'])) {
                 // Ajoute les données de l'enfant dans le contenu
-                $contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
+                //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
+                
+
+                $isVerticalArragement=true;
+
             }
+        }
+
+        if($isVerticalArragement){
+            $elementHTML = $element->ownerDocument->saveHTML($element);
+            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','a'];
+            $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
         }
 
         // Vérifie si le contenu n'est pas vide
         if (!empty($contents)) {
             // Détermine le type de disposition en fonction du tag de l'élément parent
-            $layoutType = $element->tagName === "div" ? "HorizontalArrangement" : "VerticalArrangement";
+            $layoutType = "VerticalArrangement";
 
             $elementData = [
                 '$Type' => $layoutType,
-                '$Name' => $element->getAttribute('name'),
+                '$Name' => $element->tagName,//$element->getAttribute('name'),
                 '$AlignHorizontal' => $PositionHorizontal["Center"],
                 '$AlignVertical' => $PositionVertical["Top"],
-                '$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
-                '$Height' => "",
-                '$Width' => "",
-                '$BackgroundColor' => "",
+                //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
+                //'$Height' => "",
+                //'$Width' => "",
+                '$BackgroundColor' => [255,255,255],
+                'style'=>getStyle($element,$html)['style'],
                 '$Visible' => true,
                 '$Components' => $contents
             ];
+
+            //Mise à jour des Styles
+            $elementData=setStyle($elementData["style"],$elementData);
         }
     }
 
@@ -281,75 +328,35 @@ function extractLyout($element)
 }
 
 
-
-/* 
-* Extract all
+/* EXTRACT ALL COMPONENTS
+*
+* fonction qui extrait les composants en appélant les autres fonctions définies
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractElement($element)
+function extractElement($element,$html)
 {
     $elementData=null;
-    if(($button=extractButton($element))!=null){
+    if(($button=extractButton($element,$html))!=null){
         $elementData=$button;
-    }elseif(($Label=extractElementText($element))!=null){
+    }elseif(($Label=extractElementText($element,$html))!=null){
         $elementData=$Label;
-    }elseif(($TextBox=extractTextBoxElements($element))!=null){
+    }elseif(($TextBox=extractTextBoxElements($element,$html))!=null){
         $elementData=$TextBox;
-    }elseif(($PasswordTextBox=extractPasswordTextBoxElements($element))!=null){
+    }elseif(($PasswordTextBox=extractPasswordTextBoxElements($element,$html))!=null){
         $elementData=$PasswordTextBox;
+    }elseif(($Image=extractImage($element,$html))!=null){
+        $elementData=$Image;
     }
     
     return $elementData;
 }
 
 
-/*
-* Verifier que le parent de a n'est pas dans la liste
-*/
-function verifyParent($element) {
-    $disallowedParents = ['span', 'p', 'h1', 'h2'];
-
-    // Vérifie si l'élément a un parent
-    if ($element->parentNode !== null) {
-        $parentTagName = $element->parentNode->tagName;
-        // Vérifie si le nom de balise du parent est dans la liste des parents non autorisés
-        if (in_array($parentTagName, $disallowedParents)) {
-            return false; // Le parent n'est pas autorisé
-        }
-    }
-    return true; // Le parent est autorisé ou l'élément n'a pas de parent
-}
 
 
-/*
-*get styles 
-*/
-function getStyle($element) {
-    $styles = [];
 
-    // Récupérer le style CSS inline de l'élément
-    $inlineStyle = $element->getAttribute('style');
-    if ($inlineStyle !== '') {
-        $styles['inline'] = $inlineStyle;
-    }
 
-    // Récupérer les styles CSS définis dans les feuilles de style
-    $tagName = $element->tagName;
-    $id = $element->getAttribute('id');
-    $class = $element->getAttribute('class');
-    $name = $element->getAttribute('name');
 
-    // Recherche des règles de style dans les balises <style>
-    $styleTags = $element->ownerDocument->getElementsByTagName('style');
-    foreach ($styleTags as $styleTag) {
-        $css = $styleTag->textContent;
-        // Utilisez une expression régulière pour extraire les règles de style spécifiques à cet élément
-        $pattern = '/(?<=\b' . $tagName . '\b|\b#' . $id . '\b|\b\.' . $class . '\b|\b' . $name . '\b)\s*{([^}]*)}/i';
-        preg_match($pattern, $css, $matches);
-        if (!empty($matches)) {
-            $styles['from_style_tag'] = trim($matches[0]);
-            break;
-        }
-    }
 
-    return $styles;
-}
