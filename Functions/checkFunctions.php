@@ -32,4 +32,5 @@ function isFirstParentNotInList($element, $list) {
 
     //Verifier que le parent n'est pas dans la liste
     return !in_array($parent->tagName, $list); 
-} 
+}
+

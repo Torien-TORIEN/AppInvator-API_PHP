@@ -16,7 +16,7 @@ function extractButton($element,$html)
         $buttonData = [
             '$Type' => "Button",
             //'$Name' => $element->getAttribute('name'),
-            '$Text' => $element->textContent != "" ? $element->textContent : $element->getAttribute("value"),//$element->nodeValue, // Utilise textContent pour extraire le texte
+            '$Text' => formatText($element->textContent != "" ? $element->textContent : $element->getAttribute("value")),//$element->nodeValue, // Utilise textContent pour extraire le texte
             //'$HeightPercent' => 15,
             //'$WidthPercent' => 50,
             '$FontSize' => $defaultFontSize, // Taille de police par défaut
@@ -31,11 +31,13 @@ function extractButton($element,$html)
         // Vérifie s'il y a un lien à l'intérieur du bouton
         $link = $element->getElementsByTagName('a')->item(0);
         if ($link !== null) {
-            $buttonData['$Action'] = 'redirect';
-            $buttonData['$Link'] = $link->getAttribute('href');
+            $buttonData['$Action'] = 'link:'.formatURL($link->getAttribute('href'));
+            //$buttonData['$Action'] = 'redirect';
+            //$buttonData['$Link'] = $link->getAttribute('href');
         } else {
             // Si aucun lien, l'action est définie sur 'submit'
-            $buttonData['$Action'] = 'submit';
+            $apiURL=getAPI_URL_BASE();
+            $buttonData['$Action'] = "form:$apiURL"."data.php";//"form:URL_API", $Hint=pour texte box doit etre le nom de la colonne de BD 
         }
 
         //Mise à jour des Styles
@@ -66,7 +68,7 @@ function extractElementText($element,$html)
         $elementData = [
             '$Type' => "Label",
             '$Name' => $element->getAttribute('name'),
-            '$Text' => $element->textContent, // Utilise textContent pour extraire le texte
+            '$Text' => formatText($element->textContent), // Utilise textContent pour extraire le texte
             //'$HeightPercent' => "",
             //'$WidthPercent' => "",
             //'$Height' => "",
@@ -83,10 +85,14 @@ function extractElementText($element,$html)
         // Vérifie s'il y a un lien à l'intérieur de l'élément
         $link = $element->getElementsByTagName('a')->item(0);
         if ($link !== null) {
-            $elementData['$Link'] = $link->getAttribute('href');
+            //$elementData['$Link'] = $link->getAttribute('href');
+            $elementData['$Action'] = 'link:'.formatURL($link->getAttribute('href'));
         }
 
-        if($element->tagName ==="a") $elementData['$Link'] = $element->getAttribute('href');
+        if($element->tagName ==="a") {
+            //$elementData['$Link'] = $element->getAttribute('href');
+            $elementData['$Action'] = 'link:'.formatURL($element->getAttribute('href'));
+        }
 
         // Si l'élément est une balise de titre, détermine le niveau et ajuste la taille de police
         if (preg_match('/h([1-6])/', $element->tagName, $matches)) {
@@ -112,7 +118,7 @@ function extractElementText($element,$html)
 
 /* TextBox
 * Recuperer les champs des textes [input, textarea]
-*
+* $Hint : le nom de la colonne => donc l'attribut name
 *Params: $element => Element DOM
 *        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
@@ -128,8 +134,8 @@ function extractTextBoxElements($element,$html)
         $elementData = [
             '$Type' =>"TextBox",
             //'$Name' => $element->getAttribute('name'),
-            '$Text' => $element->getAttribute('value')!=""?$element->getAttribute('value'):$element->textContent,
-            '$Hint' => $element->getAttribute('placeholder'),
+            '$Text' => formatText($element->getAttribute('value')!=""?$element->getAttribute('value'):$element->textContent),
+            '$Hint' => formatText(getColumnName($element)),
             //'$HeightPercent' => 20,
             //'$WidthPercent' => 50,
             '$FontSize' => $defaultFontSize, // Taille de police par défaut
@@ -151,8 +157,8 @@ function extractTextBoxElements($element,$html)
 }
 
 
-/* TextBox
-* Recuperer les champs des textes [input, textarea]
+/* Image
+* Recuperer les images
 *
 *Params: $element => Element DOM
 *        $html    => Page html complet reçu : pour permettre d'analyser le style
@@ -164,7 +170,6 @@ function extractImage($element,$html)
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
     if ($element->tagName==="img" ) {
-        $isTextArea = $element->tagName === 'textarea';
         $elementData = [
             '$Type' =>"Image",
             //'$Name' => $element->getAttribute('name'),
@@ -208,8 +213,8 @@ function extractPasswordTextBoxElements($element,$html)
         $elementData = [
             '$Type' =>"PasswordTextBox",
             //'$Name' => $element->getAttribute('name'),
-            '$Text' => $element->getAttribute('value'),
-            '$Hint' => $element->getAttribute('placeholder'),
+            '$Text' => formatText($element->getAttribute('value')),
+            '$Hint' => formatText(getColumnName($element)),
             //'$HeightPercent' => 10,
             //'$WidthPercent' => 100,
             '$FontSize' => $defaultFontSize, // Taille de police par défaut
@@ -219,7 +224,7 @@ function extractPasswordTextBoxElements($element,$html)
             '$ReadOnly' => $element->hasAttribute('readonly') ? true : false,
             '$NumbersOnly' => false,
             '$Visible' => true,
-            'style' => getStyle($element,$html)["style"],
+            //'style' => getStyle($element,$html)["style"],
         ];
     }
     
@@ -229,33 +234,6 @@ function extractPasswordTextBoxElements($element,$html)
     return $elementData;
 }
 
-
-
-/* 
-* Supprimer les null dans un tableau et ajoute l'index comme clé
-*/
-function removeNullElementsIndex($array) {
-    foreach ($array as $key => $value) {
-        if (is_null($value)) {
-            unset($array[$key]);
-        }
-    }
-    return $array;
-}
-
-
-/* 
-* Supprimer les null dans un tableau sans ajouter l'index comme clé
-*/
-function removeNullElements($array) {
-    $result = [];
-    foreach ($array as $value) {
-        if (!is_null($value)) {
-            $result[] = $value;
-        }
-    }
-    return $result;
-}
 
 
 /* Lyout
@@ -268,7 +246,7 @@ function removeNullElements($array) {
 */
 function extractLyout($element,$html)
 {
-    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside'];
+    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body'];
     $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
     $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
     
@@ -281,9 +259,9 @@ function extractLyout($element,$html)
 
         $isVerticalArragement=false;
 
-        // Parcours les enfants de niveau 1
+        // Parcours les enfants de niveau 1 : Si un de ses enfants sont dans la liste donc VerticalArragement 
         foreach ($element->childNodes as $child) {
-            // Vérifie si l'enfant est une balise autorisée
+            // Vérifie si l'un des enfants est une balise autorisée
 			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table','ul','li','ol','dt','dd'])) {
                 // Ajoute les données de l'enfant dans le contenu
                 //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
@@ -296,7 +274,7 @@ function extractLyout($element,$html)
 
         if($isVerticalArragement){
             $elementHTML = $element->ownerDocument->saveHTML($element);
-            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','a'];
+            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input']; //ne pas ajouter la balise a
             $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
         }
 
@@ -308,12 +286,12 @@ function extractLyout($element,$html)
             $elementData = [
                 '$Type' => $layoutType,
                 '$Name' => $element->tagName,//$element->getAttribute('name'),
-                '$AlignHorizontal' => $PositionHorizontal["Center"],
+                '$AlignHorizontal' => $PositionHorizontal["Left"],
                 '$AlignVertical' => $PositionVertical["Top"],
                 //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
                 //'$Height' => "",
                 //'$Width' => "",
-                '$BackgroundColor' => [255,255,255],
+                '$BackgroundColor' => "[255,255,255]",
                 'style'=>getStyle($element,$html)['style'],
                 '$Visible' => true,
                 '$Components' => $contents
@@ -321,6 +299,8 @@ function extractLyout($element,$html)
 
             //Mise à jour des Styles
             $elementData=setStyle($elementData["style"],$elementData);
+
+
         }
     }
 

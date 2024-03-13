@@ -19,17 +19,36 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
     // Créer un nouveau document DOM
     $dom = new DOMDocument();
     // Charger le HTML dans le document DOM (la suppression du '@' devant permet de masquer les avertissements)
-    @$dom->loadHTML($elementHTML);
+    @$dom->loadHTML($elementHTML,LIBXML_HTML_NOIMPLIED); // l'option LIBXML_HTML_NOIMPLIED pour éviter l'ajout implicite de balises <html> et <body>.
 
     //tags inlines
-    $tagsInlines=['span','a','strong','em','img','input','button','label','abbr','cite'];
+    $tagsInlines=['span','strong','em','img','input','button','label','abbr','cite',"a"];
+    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea'];
 
     // Tableau pour stocker les balises alignées
     $resultTags = [];
 
-    
+
+    /********************************************** PROBLEME ***************************************************************** */
     // Récupérer toutes les balises du document HTML
-    $elements = $dom->getElementsByTagName('*');
+    $root = $dom->documentElement;
+    //$elements = $dom->getElementsByTagName('*'); //à eviter car il prends tous les Tags : Répétiotion des champs 
+    //$elements = $root->childNodes; // Prends seulement les premiers enfants : contient noeud text entre chaque balise donc toujours VerticalArragement pas HorizontalArragement
+
+    /***************************************************** SOLUTIONS *************************************************** */
+    // Tableau pour stocker les balises HTML uniquement : ne pas conserver les noeuds textes, commentaires
+    $elements = [];
+
+    // Parcourir les enfants du nœud racine
+    foreach ($root->childNodes as $child) {
+        // Vérifier si le nœud est une balise HTML
+        if ($child->nodeType === XML_ELEMENT_NODE) {
+            // Ajouter la balise à notre tableau
+            $elements[] = $child;
+        }
+    }
+    /*********************************************************************************************************************** */
+
 
     // Variables pour suivre le groupe actuel d'alignement et l'index actuel à l'intérieur de ce groupe
     $currentInlineIndex = 0;
@@ -38,14 +57,17 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
     $previousTagName=null;
     $previousTag=null;
     foreach ($elements as $element) {
+        //echo "tagNAME :$element->tagName\n"; // pourquoi ici j'ai des 
+
         // Récupérer le nom de la balise
         $currentTag= $element;
         $currentTagName = $element->tagName;
 
         // Vérifier si la balise fait partie des balises spécifiées
-        if (in_array($currentTagName, $tagsListAccepted)) {
+        if ($element instanceof DOMElement && (in_array($currentTagName, $tagsListAccepted) || ($currentTagName ==="a" && !in_array($currentTag->parentNode->tagName,$parentTagNamesNotAccepted))) ) {
           $currentStyle=getStyle($currentTag,$html)['style'];
-          
+          //echo "TagName : $currentTagName\n";
+
           //Tag sans précedant ou n'est pas dans le meme contenaire
           if($previousTagName===null || ($previousTag->parentNode!==$currentTag->parentNode) ){
             array_push($resultTags, [extractElement($element,$html)]);
@@ -53,12 +75,12 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
 
             //les 2 Tags dans le meme contenaire 
           }else{
-            
+
             $previousStyle=getStyle($previousTag,$html)['style'];
 
             //currentTag n'est pas inline par défaut
             if(!in_array($currentTagName,$tagsInlines)){
-              
+
               //Tag precedent est inline par defaut
               if(in_array($previousTagName,$tagsInlines)){
 
@@ -85,9 +107,8 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
 
             }else{//currentTag est inline par defaut
 
-              //Tag precedent est inline par defaut
+               //Tag precedent est inline par defaut
               if(in_array($previousTagName,$tagsInlines)){
-
                 //display:block
                 if((isset($currentStyle['display']) && $currentStyle['display']==="block") || (isset($previousStyle['display']) && $previousStyle['display']==="block") || $currentInlineIndex===0){
                   array_push($resultTags, [extractElement($element,$html)]);
@@ -96,6 +117,7 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
                   
                   //echo "current id : $currentInlineIndex , lenght: ".sizeof($resultTags).", tagName : $currentTagName <br>\n";
                   array_push($resultTags[$currentInlineIndex -1], extractElement($element,$html));
+
                 }
 
               }else{//Tag precedent n'est pas display:inline par defaut mais display:block
@@ -112,9 +134,14 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
           }
 
         }
-        
-        $previousTag=$currentTag;
-        $previousTagName=$currentTagName;
+
+
+        // Si on  met  à jour previousTag si le parent de currentTag n'est pas dans cette liste 
+        //On met à jour si le parent direct n'est pas dans la liste $parentTagNamesNotAccepted (Cas de la balise <a> )
+        if(isFirstParentNotInList($currentTag,$parentTagNamesNotAccepted)){
+          $previousTag=$currentTag;
+          $previousTagName=$currentTagName;
+        }
     }
 
     // Retourner le tableau des balises alignées
@@ -135,16 +162,16 @@ function extractHorizontalLyout ($elementHTML,$tagsListAccepted,$htmlPage){
   $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
   $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
   $HorizontalArragement = [
-    '$Type' => "HoizontalArragement",
+    '$Type' => "HorizontalArrangement",
     //'$Name' => "",//$element->getAttribute('name'),
-    '$AlignHorizontal' => $PositionHorizontal["Center"],
+    '$AlignHorizontal' => $PositionHorizontal["Left"],
     '$AlignVertical' => $PositionVertical["Top"],
     //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
     //'$HeightPercent' => "",
     '$WidthPercent' => 100,
     //'$Height' => "",
     //'$Width' => "",
-    '$BackgroundColor' => "",
+    //'$BackgroundColor' => "",
     '$Visible' => true,
     '$Components' => []
   ];
@@ -152,6 +179,8 @@ function extractHorizontalLyout ($elementHTML,$tagsListAccepted,$htmlPage){
   $returnData=[];
   //Tableau
   $tabs=findInlineTags($elementHTML, $tagsListAccepted,$htmlPage);
+
+  //print_r($tabs);
 
   foreach($tabs as $horizontalTab){
     //echo "dans le premier boucle\n";

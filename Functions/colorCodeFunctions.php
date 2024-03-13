@@ -155,7 +155,7 @@ function listColors(){
 
 
 /*
-* Convertir le couleur en  RGB sous forme du tableau : [R,G,B]
+* Convertir la couleur en  RGB sous forme de chaine du tableau : "[R,G,B]"
 */
 function colorToRGB($couleur,$ColorCodes) {
     // Si la couleur commence par un "#" suivi de 3 ou 6 caractères hexadécimaux
@@ -175,15 +175,18 @@ function colorToRGB($couleur,$ColorCodes) {
         }
         
         // Retourner les valeurs RGB dans un tableau
-        return array($r, $g, $b);
+        $array= array($r, $g, $b);
+        return json_encode($array);
     } elseif (preg_match('/^rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)$/', $couleur, $matches)) {
         // Si la couleur est déjà en format RGB
-        return array((int)$matches[1], (int)$matches[2], (int)$matches[3]);
+        $array= array((int)$matches[1], (int)$matches[2], (int)$matches[3]);
+        return json_encode($array);
     } elseif(array_key_exists($couleur, $ColorCodes)) {
         // Si la couleur est dans le tableau associatif $couleurs
-        return $ColorCodes[$couleur];
+        $array= $ColorCodes[$couleur];
+        return json_encode($array);
     }else{//couleur invalide
-        return null;
+        return "";
     }
 }
 

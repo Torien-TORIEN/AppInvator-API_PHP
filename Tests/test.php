@@ -1,46 +1,19 @@
 <?php
-$htmlContent='<!DOCTYPE html>
-<html>
-<head>
-<style>
-.container {background-color: powderblue;}
-div{text-align:center}
-h1{color: blue;}
-.title{ text-align:center;}
-p{font-weight: bold;}
-#nom,#prenom{color:blue;}
-#age{color:green;text-decoration: underline;}
-button {
-  display: inline-block;
-  padding: 10px 20px;
-  color: white;
-  text-align: center;
-  text-decoration: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-div.container {display: block;}
-#submit{background-color: #4CAF50; }
-input[type="text"]{
-    width: 100%;
-    border-radius: 5px;
-    box-sizing: border-box;
-}
 
-</style>
-</head>
-<body>
-<div class="container" style="width:100%">
-  <h1 class="title" style="font-style: italic;width:10px">Informations </h1>
-  <p>Nom : <span class="value" id="nom">Toto</span></p>
-  <p>Prenom : <span class="value" id="prenom">Titi</span></p>
-  <p>Age : <span class="value" id="age">20</span> ans</p>
-  <label for="fname">First name:</label>
-  <input type="text" id="fname" name="fname" value="TOTO" readonly><br><br>
-  <button class="button" id="submit">Submit</button>
-  <button class="button" id="cancel" style="background-color:red">Cancel</button> 
-</div>
+//encoding 
+$caractere_a = "Aller à l'école "; // le caractère à
+$json_encode = json_encode($caractere_a);
+//$json_encode = json_encode($caractere_a,JSON_UNESCAPED_UNICODE);
+echo "$json_encode <br> \n"; // Affiche "\u00e0"
 
-</body>
-</html>';
+
+
+
+
+
+
+$texte_iso = "\u00c3\u00a0"; // la représentation Unicode incorrecte
+$texte_html = "Aller \u00c3\u00a0 W3Schools, cliquer Ici"; // la représentation Unicode correcte
+//$texte_utf8 = html_entity_decode($texte_html, ENT_QUOTES, 'UTF-8'); // Convertir les entités HTML en UTF-8
+$texte_utf8 = json_decode('"'.$texte_html.'"');
+echo "$texte_html = $texte_utf8"; // Affiche le caractère "à
