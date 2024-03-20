@@ -149,7 +149,7 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
 }
 
 
-/*
+/*Lyout : HorizontalArragement
 * fonction qui structure les components en HorizontalArragement
 *
 *Params: $elementHTML         => Element DOM
@@ -205,6 +205,78 @@ function extractHorizontalLyout ($elementHTML,$tagsListAccepted,$htmlPage){
   
 }
 
+
+
+/* Lyout : VerticalArrangement
+* Recuperer les lyouts [div, section , article, ...] si parmi les enfants de niveau 1 de ce div il y a ces listes suivantes
+*[h1-6,label,p,span,a,button,img,table,]
+*Si l'enfant de ce tag est seulement parmis [div,section,form,article,...] on le recupère pas
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
+*/
+function extractLyout($element,$html)
+{
+    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body'];
+    $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
+    $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
+    
+    $elementData = [];
+
+    // Vérifie si le tag de l'élément est dans la liste des balises autorisées
+    if (in_array($element->tagName, $ContainerTagNames)) {
+        // Initialise le contenu
+        $contents = [];
+
+        $isVerticalArragement=false;
+
+        // Parcours les enfants de niveau 1 : Si un de ses enfants sont dans la liste donc VerticalArragement 
+        foreach ($element->childNodes as $child) {
+            // Vérifie si l'un des enfants est une balise autorisée
+			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table','ul','li','ol','dt','dd'])) {
+                // Ajoute les données de l'enfant dans le contenu
+                //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
+                
+
+                $isVerticalArragement=true;
+
+            }
+        }
+
+        if($isVerticalArragement){
+            $elementHTML = $element->ownerDocument->saveHTML($element);
+            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','select']; //ne pas ajouter la balise a
+            $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
+        }
+
+        // Vérifie si le contenu n'est pas vide
+        if (!empty($contents)) {
+            // Détermine le type de disposition en fonction du tag de l'élément parent
+            $layoutType = "VerticalArrangement";
+
+            $elementData = [
+                '$Type' => $layoutType,
+                '$Name' => $element->tagName,//$element->getAttribute('name'),
+                '$AlignHorizontal' => $PositionHorizontal["Left"],
+                '$AlignVertical' => $PositionVertical["Top"],
+                //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
+                //'$Height' => "",
+                //'$Width' => "",
+                '$BackgroundColor' => "[255,255,255]",
+                'style'=>getStyle($element,$html)['style'],
+                '$Visible' => true,
+                '$Components' => $contents
+            ];
+
+            //Mise à jour des Styles
+            $elementData=setStyle($elementData["style"],$elementData);
+
+
+        }
+    }
+
+    return $elementData;
+}
 
 
 // Test de la fonction avec l'exemple donné
@@ -367,7 +439,7 @@ $html='<!DOCTYPE html>
 
 </body>
 </html>';
-$tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','a'];
+$tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input'];
 
 //$result = findInlineTags($html, $tags);
 

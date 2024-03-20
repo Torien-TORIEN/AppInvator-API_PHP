@@ -235,77 +235,59 @@ function extractPasswordTextBoxElements($element,$html)
 }
 
 
-
-/* Lyout
-* Recuperer les lyouts [div, section , article, ...] si parmi les enfants de niveau 1 de ce div il y a ces listes suivantes
-*[h1-6,label,p,span,a,button,img,table,]
-*Si l'enfant de ce tag est seulement parmis [div,section,form,article,...] on le recupère pas
+/* Spinner : Select balises
+* Recuperer les options de la balise select  [select ]
 *
 *Params: $element => Element DOM
 *        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractLyout($element,$html)
+function extractSelectElements($element,$html)
 {
-    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body'];
-    $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
-    $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
-    
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if (in_array($element->tagName, $ContainerTagNames)) {
-        // Initialise le contenu
-        $contents = [];
+    if ($element->tagName==="select") {
+        // Extraction des options
+        $options = $element->getElementsByTagName('option');
+        $elements = [];
+        foreach ($options as $option) {
+            $elements[] = formatText($option->textContent);
+        }
 
-        $isVerticalArragement=false;
-
-        // Parcours les enfants de niveau 1 : Si un de ses enfants sont dans la liste donc VerticalArragement 
-        foreach ($element->childNodes as $child) {
-            // Vérifie si l'un des enfants est une balise autorisée
-			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table','ul','li','ol','dt','dd'])) {
-                // Ajoute les données de l'enfant dans le contenu
-                //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
-                
-
-                $isVerticalArragement=true;
-
+        // Sélection par défaut
+        $defaultSelection = formatText($elements[0]);
+        foreach ($options as $option) {
+            if ($option->hasAttribute('selected')) {
+                $defaultSelection = formatText($option->textContent);
+                break;
             }
         }
 
-        if($isVerticalArragement){
-            $elementHTML = $element->ownerDocument->saveHTML($element);
-            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input']; //ne pas ajouter la balise a
-            $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
-        }
-
-        // Vérifie si le contenu n'est pas vide
-        if (!empty($contents)) {
-            // Détermine le type de disposition en fonction du tag de l'élément parent
-            $layoutType = "VerticalArrangement";
-
-            $elementData = [
-                '$Type' => $layoutType,
-                '$Name' => $element->tagName,//$element->getAttribute('name'),
-                '$AlignHorizontal' => $PositionHorizontal["Left"],
-                '$AlignVertical' => $PositionVertical["Top"],
-                //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
-                //'$Height' => "",
-                //'$Width' => "",
-                '$BackgroundColor' => "[255,255,255]",
-                'style'=>getStyle($element,$html)['style'],
-                '$Visible' => true,
-                '$Components' => $contents
-            ];
-
-            //Mise à jour des Styles
-            $elementData=setStyle($elementData["style"],$elementData);
-
-
-        }
+        $elementData = [
+            '$Type' => "Spinner",
+            //'$Name' => $element->getAttribute('name'),
+            '$ElementsFromString' => implode(',', $elements),
+            '$Selection' => $defaultSelection,
+            //'$HeightPercent' => 10,
+            //'$WidthPercent' => 100,
+            //'$FontSize' => $defaultFontSize, // Taille de police par défaut
+            '$FontBold' => false,
+            //'$TextColor' => "",
+            //'$BackgroundColor' => "",
+            '$Visible' => true,
+        ];
+        
     }
+
+    //Mise à jour des Styles
+    $elementData=setStyle($elementData["style"],$elementData);
 
     return $elementData;
 }
+
+
+
+
 
 
 /* EXTRACT ALL COMPONENTS
@@ -317,6 +299,7 @@ function extractLyout($element,$html)
 */
 function extractElement($element,$html)
 {
+    
     $elementData=null;
     if(($button=extractButton($element,$html))!=null){
         $elementData=$button;
@@ -328,6 +311,8 @@ function extractElement($element,$html)
         $elementData=$PasswordTextBox;
     }elseif(($Image=extractImage($element,$html))!=null){
         $elementData=$Image;
+    }elseif(($Select=extractSelectElements($element,$html))!=null){
+        $elementData=$Select;
     }
     
     return $elementData;

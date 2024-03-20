@@ -25,7 +25,7 @@ function extractMenuElement($element,$html)
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
     if (in_array($element->tagName, $tagNames)) {
         //Verifier sa classe n'est pas :<<non-menu>>
-        if(!containsNonMenuClass($element,"non-menu")){
+        if(!containsNonMenuClass($element,"non-menu")){ # pour le nav only = only-nav
             $elementData = [
                 formatText($element->textContent) => formatURL($element->getAttribute('href')),
             ];
