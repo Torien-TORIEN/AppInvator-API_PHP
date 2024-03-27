@@ -1,10 +1,5 @@
 <?php
 
-// Fonction pour vérifier si l'élément contient la classe $classValue
-function containsNonMenuClass($element, $classValue) {
-    $classes = explode(' ', $element->getAttribute('class'));
-    return in_array($classValue, $classes);
-}
 
 
 

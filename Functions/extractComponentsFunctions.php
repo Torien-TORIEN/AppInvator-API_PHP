@@ -58,16 +58,17 @@ function extractButton($element,$html)
 function extractElementText($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
-    $tagNames = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li'];
-    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea'];
+    $tagNames = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li',"dt","dd"];
+    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea',"dt","dd"];
     $childMidleTagNames=['a','b','span','em','i','strong'];
     $elementData = [];
 
+    //&&(($link = $element->getElementsByTagName('a')->item(0))==null || (($link = $element->getElementsByTagName('a')->item(0))!==null && $link->getAttribute('class') !=="only-menu") )
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if (in_array($element->tagName, $tagNames) || (in_array($element->tagName, $childMidleTagNames) && isFirstParentNotInList($element,$parentTagNamesNotAccepted))) {
+    if (in_array($element->tagName, $tagNames) || (in_array($element->tagName, $childMidleTagNames) && isFirstParentNotInList($element,$parentTagNamesNotAccepted))  ) {
         $elementData = [
             '$Type' => "Label",
-            '$Name' => $element->getAttribute('name'),
+            '$Name' => $element->tagName,# $element->getAttribute('name'),
             '$Text' => formatText($element->textContent), // Utilise textContent pour extraire le texte
             //'$HeightPercent' => "",
             //'$WidthPercent' => "",
@@ -87,11 +88,19 @@ function extractElementText($element,$html)
         if ($link !== null) {
             //$elementData['$Link'] = $link->getAttribute('href');
             $elementData['$Action'] = 'link:'.formatURL($link->getAttribute('href'));
+            if($link->getAttribute('class')==="only-menu"){
+                $elementData['$Visible'] =false;
+            }
         }
 
-        if($element->tagName ==="a") {
+        if($element->tagName ==="a" ) {
             //$elementData['$Link'] = $element->getAttribute('href');
             $elementData['$Action'] = 'link:'.formatURL($element->getAttribute('href'));
+        }
+
+        // Rendre Invisible si c'est un menu
+        if(containsNonMenuClass($element,"only-menu")){
+            $elementData['$Visible']=false;
         }
 
         // Si l'élément est une balise de titre, détermine le niveau et ajuste la taille de police
@@ -109,7 +118,24 @@ function extractElementText($element,$html)
         $elementData=setStyle($elementData["style"],$elementData);
 
         
+    //Recuperer la ligne hr sous forme de Label
+    }elseif($element->tagName==="hr"){
+        $elementData = [
+            '$Type' => "Label",
+            '$Name' => "hr",
+            '$Text' => " ", // Utilise textContent pour extraire le texte
+            //'$HeightPercent' => "",
+            '$WidthPercent' => 100,
+            '$Height' => 1,
+            //'$Width' => "",
+            '$FontSize' => $defaultFontSize, // Taille de police par défaut
+            '$FontBold' => false,
+            //'$TextColor' =>"",
+            '$BackgroundColor' => "[0,0,0]",
+            '$Visible' => true,
+            //'style' => getStyle($element,$html)["style"],
 
+        ];
     }
 
     return $elementData;
@@ -169,7 +195,7 @@ function extractImage($element,$html)
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if ($element->tagName==="img" ) {
+    if ($element->tagName==="img") {
         $elementData = [
             '$Type' =>"Image",
             //'$Name' => $element->getAttribute('name'),
@@ -188,7 +214,6 @@ function extractImage($element,$html)
             'style' => getStyle($element,$html)["style"],
         ];
     }
-
     //Mise à jour des Styles
     $elementData=setStyle($elementData["style"],$elementData);
 
@@ -233,6 +258,7 @@ function extractPasswordTextBoxElements($element,$html)
 
     return $elementData;
 }
+
 
 
 /* Spinner : Select balises

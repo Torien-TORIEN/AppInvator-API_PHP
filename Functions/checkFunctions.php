@@ -3,6 +3,17 @@
 // Désactiver les avertissements
 error_reporting(E_ERROR | E_PARSE);
 
+
+/*
+* Fonction pour vérifier si l'élément contient la classe $classValue
+*/
+function containsNonMenuClass($element, $classValue) {
+    $classes = explode(' ', $element->getAttribute('class'));
+    return in_array($classValue, $classes);
+}
+
+
+
 /*
 * Fonction pour tester si une balise est un bouton ou non
 */
@@ -33,4 +44,3 @@ function isFirstParentNotInList($element, $list) {
     //Verifier que le parent n'est pas dans la liste
     return !in_array($parent->tagName, $list); 
 }
-

@@ -149,7 +149,7 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
 }
 
 
-/*Lyout : HorizontalArragement
+/* Lyout : HorinzontalArragement
 * fonction qui structure les components en HorizontalArragement
 *
 *Params: $elementHTML         => Element DOM
@@ -206,8 +206,7 @@ function extractHorizontalLyout ($elementHTML,$tagsListAccepted,$htmlPage){
 }
 
 
-
-/* Lyout : VerticalArrangement
+/* Lyout : VerticalArragement
 * Recuperer les lyouts [div, section , article, ...] si parmi les enfants de niveau 1 de ce div il y a ces listes suivantes
 *[h1-6,label,p,span,a,button,img,table,]
 *Si l'enfant de ce tag est seulement parmis [div,section,form,article,...] on le recupère pas
@@ -217,7 +216,7 @@ function extractHorizontalLyout ($elementHTML,$tagsListAccepted,$htmlPage){
 */
 function extractLyout($element,$html)
 {
-    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body'];
+    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body','ul','dl'];
     $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
     $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
     
@@ -232,20 +231,22 @@ function extractLyout($element,$html)
 
         // Parcours les enfants de niveau 1 : Si un de ses enfants sont dans la liste donc VerticalArragement 
         foreach ($element->childNodes as $child) {
-            // Vérifie si l'un des enfants est une balise autorisée
-			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table','ul','li','ol','dt','dd'])) {
-                // Ajoute les données de l'enfant dans le contenu
-                //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
-                
+            // Vérifie si l'un des enfants est une balise autorisée (balises de textes ou images)
+			    if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span','strong', 'a', 'button', 'img', 'input','table','li','ol','dt','dd'])) {
+              // Ajoute les données de l'enfant dans le contenu
+              //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
+              
 
-                $isVerticalArragement=true;
 
-            }
+              $isVerticalArragement=true;//Si true , On prend la balise  comme  VerticalArragement
+
+          }
         }
 
         if($isVerticalArragement){
             $elementHTML = $element->ownerDocument->saveHTML($element);
-            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','select']; //ne pas ajouter la balise a
+            //Balises de textes ou image
+            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','select','hr','dd','dt','li']; //ne pas ajouter la balise a
             $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
         }
 
@@ -277,6 +278,7 @@ function extractLyout($element,$html)
 
     return $elementData;
 }
+
 
 
 // Test de la fonction avec l'exemple donné
