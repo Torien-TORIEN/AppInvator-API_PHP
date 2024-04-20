@@ -1,11 +1,5 @@
 <?php
 
-// Fonction pour vérifier si l'élément contient la classe $classValue
-function containsNonMenuClass($element, $classValue) {
-    $classes = explode(' ', $element->getAttribute('class'));
-    return in_array($classValue, $classes);
-}
-
 
 
 /* Menu SideBar
@@ -18,16 +12,15 @@ function extractMenuElement($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
     $tagNames = ['a'];
-    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea'];
-    $childMidleTagNames=['a','b','span','em','i','strong'];
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
     if (in_array($element->tagName, $tagNames)) {
-        //Verifier sa classe n'est pas :<<non-menu>>
+        //Verifier sa classe n'est pas :<<non-menu>> # <<only-menu>>
         if(!containsNonMenuClass($element,"non-menu")){
             $elementData = [
-                formatText($element->textContent) => formatURL($element->getAttribute('href')),
+                formatTextMenu($element->textContent) => formatURL($element->getAttribute('href')),
+                //$element->textContent=> formatURL($element->getAttribute('href')),
             ];
         }
     }

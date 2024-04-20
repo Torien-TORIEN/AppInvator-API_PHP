@@ -149,7 +149,7 @@ function findInlineTags($elementHTML, $tagsListAccepted,$html) {
 }
 
 
-/*
+/* Lyout : HorinzontalArragement
 * fonction qui structure les components en HorizontalArragement
 *
 *Params: $elementHTML         => Element DOM
@@ -206,168 +206,86 @@ function extractHorizontalLyout ($elementHTML,$tagsListAccepted,$htmlPage){
 }
 
 
+/* Lyout : VerticalArragement
+* Recuperer les lyouts [div, section , article, ...] si parmi les enfants de niveau 1 de ce div il y a ces listes suivantes
+*[h1-6,label,p,span,a,button,img,table,]
+*Si l'enfant de ce tag est seulement parmis [div,section,form,article,...] on le recupère pas
+*
+*Params: $element => Element DOM
+*        $html    => Page html complet reçu : pour permettre d'analyser le style
+*/
+function extractLyout($element,$html)
+{
+    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body','ul','ol','dl', 'figure'];
+    $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
+    $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
+    
+    $elementData = [];
 
-// Test de la fonction avec l'exemple donné
-$html = '<!DOCTYPE html>
-<html>
-<head>
-</head>
-<body>
-<div>
-  <h1>This is a heading</h1>
-  <p>This is a paragraph.</p>
-</div>
+    // Vérifie si le tag de l'élément est dans la liste des balises autorisées
+    if (in_array($element->tagName, $ContainerTagNames)) {
+        // Initialise le contenu
+        $contents = [];
+        //echo "Lyout VA :+$element->tagName =>";
+        $isVerticalArragement=false;
 
-<div>
-  <label id="l1">genre  : </label>
-  <label  id="l2">Mean</label>
-  <label  id="l3" style="display:block">Next</label>
-  <label  id="l4">Year :</label>
-  <label  id="l5">2022</label>
-</div>
-<form action="/action_page.php">
-  <label  id="l6" for="fname">First name:</label>
-  <input  id="i1" type="text" id="fname" name="fname"><br><br>
-  <label  id="l7"for="lname">Last name:</label>
-  <input  id="i2"type="text" id="lname" name="lname"><br><br>
-  <input  id="i3"type="submit" value="Submit">
-</form>
-</body>
-</html>';
+        // Parcours les enfants de niveau 1 : Si un de ses enfants sont dans la liste donc VerticalArragement 
+        foreach ($element->childNodes as $child) {
+            // Vérifie si l'un des enfants est une balise autorisée (balises de textes ou images)
+			    if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span','strong', 'a', 'button', 'img', 'input','table','li','dt','dd'])) {
+              // Ajoute les données de l'enfant dans le contenu
+              //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
+              
 
 
-$html='<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Styled Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+              $isVerticalArragement=true;//Si true , On prend la balise  comme  VerticalArragement
+
+          }
+        }
+        //echo "$isVerticalArragement \n";
+        if($isVerticalArragement){
+            $elementHTML = $element->ownerDocument->saveHTML($element);
+            //Balises de textes ou image
+            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','select','hr','dd','dt','li','pre']; //ne pas ajouter la balise a
+            $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
+            
+
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+        // Vérifie si le contenu n'est pas vide
+        if (!empty($contents)) {
+            // Détermine le type de disposition en fonction du tag de l'élément parent
+            $layoutType = "VerticalArrangement";
+
+            $elementData = [
+                '$Type' => $layoutType,
+                '$Name' => $element->tagName,//$element->getAttribute('name'),
+                '$AlignHorizontal' => $PositionHorizontal["Left"],
+                '$AlignVertical' => $PositionVertical["Top"],
+                //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
+                //'$Height' => "",
+                //'$Width' => "",
+                '$BackgroundColor' => "[255,255,255]",
+                'style'=>getStyle($element,$html)['style'],
+                '$Visible' => true,
+                //'$Components' => $contents
+            ];
+
+            //Mise à jour des Styles
+            $elementData=setStyle($elementData["style"],$elementData);
+
+            //Mettre l'attribut $Components à la fin (après avoir mis à jour le style)
+            $elementData['$Components']=$contents;
+
+
         }
+    }
+    return $elementData;
+}
 
-        .button {
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
 
-        .button1 {
-            background-color: #04AA6D;
-        }
 
-        .button2 {
-            background-color: #008CBA;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        h3 {
-            color: #666;
-        }
-
-        p {
-            color: #888;
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 20px auto;
-        }
-
-        form {
-            margin-top: 20px;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        input[type="text"],
-        input[type="password"],
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-
-        input[type="submit"] {
-            background-color: #04AA6D;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-        }
-
-        input[type="submit"]:hover {
-            background-color: #45a049;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div>
-        <a href="https://www.w3schools.com">Lien W3school</a>
-        <h1>The button element - Styled with CSS</h1>
-        <h3>Aller à W3Schools, cliquer <a href="https://www.w3schools.com">Ici</a></h3>
-        <p>Change the background color of a button with the background-color property:</p>
-    </div>
-
-    <div>
-        <img src="https://i.ytimg.com/vi/JJt9tVcrXRw/maxresdefault.jpg" alt="LOGO">
-        <button class="button button1">Green</button>
-        <input type="button" class="button button2" value="Blue">
-    </div>
-
-    <div>
-        <form action="">
-            <label for="fname">First name:</label>
-            <input type="text" id="fname" name="fname" value="TOTO" readonly><br><br>
-            <label for="lname">Last name:</label>
-            <input type="text" id="lname" name="lname" placeholder="Your name"><br><br>
-            <label for="pwd">Password:</label>
-            <input type="password" id="pwd" name="pwd"><br><br>
-            <label for="w3review">Review of W3Schools:</label>
-            <textarea id="w3review" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
-            <input type="submit" value="Submit">
-            <button class="button button1"><a href="https://www.w3schools.com" style="text-decoration: none; color: white;">Visit W3Schools.com!</a></button>
-        </form>
-    </div>
-</div>
-
-</body>
-</html>';
-$tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','a'];
+//$tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input','a'];
 
 //$result = findInlineTags($html, $tags);
 

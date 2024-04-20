@@ -27,6 +27,24 @@ function removeNullElements($array) {
     return $result;
 }
 
+/* REMOVE Attribut vide des menus element without index
+*
+* Supprimer les attribut element dont la clé est une chaine vide ex :  "" => "lien// ", vide  dans un tableau sans ajouter l'index comme clé
+*/
+function removeNullAttributs($array) {
+    $result = [];
+    foreach ($array as $tab) {
+        foreach ($tab as $key => $value) {
+            if ($key !== "" && $key !== null && $value !== "") {
+                //echo "Key : $key , value : $value \n";
+                $result[] = $tab;
+            }
+        }
+        
+    }
+    return $result;
+}
+
 
 /* TABLE Column in Database
 *
@@ -51,6 +69,12 @@ function getColumnName($tag){
 *
 */
 function formatText($chaine) {
+
+    //echo "Text reçu :\n\t$chaine\n";
+
+    // Décode la chaîne reçue
+    $chaine = utf8_decode($chaine);
+
     // Supprimer les \n et \t
     $chaine = str_replace(array("\n", "\t"), '', $chaine);
 
@@ -60,9 +84,71 @@ function formatText($chaine) {
     // Remplacer plusieurs espaces par un seul espace
     $chaine = preg_replace('/\s+/', ' ', $chaine);
 
+    // Remplacer un £ par le caractère "£"
+    $chaine= str_replace('£', '#LivS', $chaine);
+
+    // Remplacer un &nbsp par  un espace
+    $chaine= str_replace('&nbsp', ' ', $chaine);
+
     // Remplacer un espace par le caractère "£"
-    //return str_replace(' ', '£', $chaine); //decommenter
-    $chaine = str_replace(' ', '_', $chaine); // commenter
+    $chaine= str_replace(' ', '£', $chaine); //decommenter
+
+    //Tilde
+    $chaine= str_replace('~', '#tild#', $chaine); 
+
+    //Remplacer " par ~ 
+    $chaine= str_replace('"', '~', $chaine); //pour éviter un probleme car l'appli remplace 
+
+    //Virgule 
+    $chaine= str_replace(',', '#vir#', $chaine); 
+
+    //Crochets
+    $chaine= str_replace('[', '#croc', $chaine);
+    $chaine= str_replace(']', 'croc#', $chaine); 
+
+    //Accolades
+    $chaine= str_replace('{', '#acol', $chaine);
+    $chaine= str_replace('}', 'acol#', $chaine); 
+
+    //echo "Text envoyé :\n\t$chaine\n\n\n";
+    return $chaine;
+}
+
+
+/* FORMATING POUR LES MENUS ST=tring
+*
+* Fonction qui formate les chaines de caractères à envoyer et Eviter les accents
+*
+*/
+function formatTextMenu($chaine) {
+
+    //echo "Text reçu :\n\t$chaine\n";
+
+    //Vérifie si la chaîne contient des caractères spéciaux accentués et les remplacer
+    if (preg_match('/[ÉÀÈÊËÎÏÔŒÙÛÜÇéàèêëîïôœùûüç]/', $chaine)) {
+        // Mise en majuscule et remplacement des caractères accentués
+        $chaine = mb_strtoupper(str_replace(
+            array('é', 'à', 'è', 'ê', 'ë', 'î', 'ï', 'ô', 'œ', 'ù', 'û', 'ü', 'ç', 'É', 'À', 'È', 'Ê', 'Ë', 'Î', 'Ï', 'Ô', 'Œ', 'Ù', 'Û', 'Ü', 'Ç'), 
+            array('E', 'A', 'E', 'E', 'E', 'I', 'I', 'O', 'OE', 'U', 'U', 'U', 'C', 'E', 'A', 'E', 'E', 'E', 'I', 'I', 'O', 'OE', 'U', 'U', 'U', 'C'), 
+            $chaine
+        )); 
+    }
+
+    // Formatter les textes
+    formatText($chaine);
+
+    
+    // ReVérifie si la chaîne contient des caractères spéciaux accentués et les remplacer
+    if (preg_match('/[ÉÀÈÊËÎÏÔŒÙÛÜÇéàèêëîïôœùûüç]/', $chaine)) {
+        // Mise en majuscule et remplacement des caractères accentués
+        $chaine = mb_strtoupper(str_replace(
+            array('é', 'à', 'è', 'ê', 'ë', 'î', 'ï', 'ô', 'œ', 'ù', 'û', 'ü', 'ç', 'É', 'À', 'È', 'Ê', 'Ë', 'Î', 'Ï', 'Ô', 'Œ', 'Ù', 'Û', 'Ü', 'Ç'), 
+            array('E', 'A', 'E', 'E', 'E', 'I', 'I', 'O', 'OE', 'U', 'U', 'U', 'C', 'E', 'A', 'E', 'E', 'E', 'I', 'I', 'O', 'OE', 'U', 'U', 'U', 'C'), 
+            $chaine
+        ));
+    }
+
+    //echo "Text envoyé :\n\t$chaine\n\n\n";
 
     return $chaine;
 }

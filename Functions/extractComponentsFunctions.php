@@ -58,16 +58,32 @@ function extractButton($element,$html)
 function extractElementText($element,$html)
 {
     $defaultFontSize = 14.0; // Taille de police par défaut en pixels
-    $tagNames = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li'];
-    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea'];
+    $tagNames = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li',"dt","dd","pre"];
+    $parentTagNamesNotAccepted = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p','li','button','textarea',"dt","dd"];
     $childMidleTagNames=['a','b','span','em','i','strong'];
     $elementData = [];
 
+    //&&(($link = $element->getElementsByTagName('a')->item(0))==null || (($link = $element->getElementsByTagName('a')->item(0))!==null && $link->getAttribute('class') !=="only-menu") )
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if (in_array($element->tagName, $tagNames) || (in_array($element->tagName, $childMidleTagNames) && isFirstParentNotInList($element,$parentTagNamesNotAccepted))) {
+    if (in_array($element->tagName, $tagNames) || (in_array($element->tagName, $childMidleTagNames) && isFirstParentNotInList($element,$parentTagNamesNotAccepted))  ) {
+        
+        // Vérifier si c'est une balise <a> contenant une balise <img>
+        if (($element->tagName === 'a' && $element->getElementsByTagName('img')->length > 0)) {
+            //return null;
+             // Appeler la fonction extractImage pour traiter l'image
+             $Imagedata=extractImage($element->getElementsByTagName('img')->item(0), $html);
+             $Imagedata['$Clickable']=true;
+             $Imagedata['$Action'] = 'link:'.formatURL($element->getAttribute('href'));
+             return $Imagedata;
+        }else if(in_array($element->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p']) && $element->getElementsByTagName('img')->length > 0){
+            return extractImage($element->getElementsByTagName('img')->item(0), $html);
+        }else if(formatText($element->textContent) ==""){
+            return null;
+        }
+
         $elementData = [
             '$Type' => "Label",
-            '$Name' => $element->getAttribute('name'),
+            '$Name' => $element->tagName,# $element->getAttribute('name'),
             '$Text' => formatText($element->textContent), // Utilise textContent pour extraire le texte
             //'$HeightPercent' => "",
             //'$WidthPercent' => "",
@@ -87,11 +103,19 @@ function extractElementText($element,$html)
         if ($link !== null) {
             //$elementData['$Link'] = $link->getAttribute('href');
             $elementData['$Action'] = 'link:'.formatURL($link->getAttribute('href'));
+            if($link->getAttribute('class')==="only-menu"){
+                $elementData['$Visible'] =false;
+            }
         }
 
-        if($element->tagName ==="a") {
+        if($element->tagName ==="a" ) {
             //$elementData['$Link'] = $element->getAttribute('href');
             $elementData['$Action'] = 'link:'.formatURL($element->getAttribute('href'));
+        }
+
+        // Rendre Invisible si c'est un menu
+        if(containsNonMenuClass($element,"only-menu")){
+            $elementData['$Visible']=false;
         }
 
         // Si l'élément est une balise de titre, détermine le niveau et ajuste la taille de police
@@ -109,7 +133,24 @@ function extractElementText($element,$html)
         $elementData=setStyle($elementData["style"],$elementData);
 
         
+    //Recuperer la ligne hr sous forme de Label
+    }elseif($element->tagName==="hr"){
+        $elementData = [
+            '$Type' => "Label",
+            '$Name' => "hr",
+            '$Text' => " ", // Utilise textContent pour extraire le texte
+            //'$HeightPercent' => "",
+            '$WidthPercent' => 100,
+            '$Height' => 1,
+            //'$Width' => "",
+            '$FontSize' => $defaultFontSize, // Taille de police par défaut
+            '$FontBold' => false,
+            //'$TextColor' =>"",
+            '$BackgroundColor' => "[0,0,0]",
+            '$Visible' => true,
+            //'style' => getStyle($element,$html)["style"],
 
+        ];
     }
 
     return $elementData;
@@ -169,12 +210,12 @@ function extractImage($element,$html)
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if ($element->tagName==="img" ) {
+    if ($element->tagName==="img") {
         $elementData = [
             '$Type' =>"Image",
             //'$Name' => $element->getAttribute('name'),
             '$AlternateText' => $element->getAttribute('alt'),
-            '$Picture' => $element->getAttribute('src'),
+            '$Picture' => formatURL($element->getAttribute('src')),
             '$HeightPercent' => preg_match('/\d+%$/', $element->getAttribute("height"),$matches)?intval(trim($matches[sizeof($matches)-1],'%')):"",
             '$WidthPercent' =>preg_match('/\d+%$/', $element->getAttribute("width"),$matches)?intval(trim($matches[sizeof($matches)-1],'%')):100,
             '$Height' => preg_match('/\d+px$/', $element->getAttribute("height"),$matches)?intval(trim($matches[sizeof($matches)-1],'px')):"",
@@ -188,7 +229,6 @@ function extractImage($element,$html)
             'style' => getStyle($element,$html)["style"],
         ];
     }
-
     //Mise à jour des Styles
     $elementData=setStyle($elementData["style"],$elementData);
 
@@ -236,76 +276,59 @@ function extractPasswordTextBoxElements($element,$html)
 
 
 
-/* Lyout
-* Recuperer les lyouts [div, section , article, ...] si parmi les enfants de niveau 1 de ce div il y a ces listes suivantes
-*[h1-6,label,p,span,a,button,img,table,]
-*Si l'enfant de ce tag est seulement parmis [div,section,form,article,...] on le recupère pas
+/* Spinner : Select balises
+* Recuperer les options de la balise select  [select ]
 *
 *Params: $element => Element DOM
 *        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
-function extractLyout($element,$html)
+function extractSelectElements($element,$html)
 {
-    $ContainerTagNames=['div', 'section', 'article','nav','form','header','footer','aside','body'];
-    $PositionHorizontal = ['Left' => 1, 'Right' => 2, 'Center' => 3];
-    $PositionVertical = ['Top' => 1, 'Center' => 2, 'Bottom' => 3];
-    
     $elementData = [];
 
     // Vérifie si le tag de l'élément est dans la liste des balises autorisées
-    if (in_array($element->tagName, $ContainerTagNames)) {
-        // Initialise le contenu
-        $contents = [];
+    if ($element->tagName==="select") {
+        // Extraction des options
+        $options = $element->getElementsByTagName('option');
+        $elements = [];
+        foreach ($options as $option) {
+            $elements[] = formatText($option->textContent);
+        }
 
-        $isVerticalArragement=false;
-
-        // Parcours les enfants de niveau 1 : Si un de ses enfants sont dans la liste donc VerticalArragement 
-        foreach ($element->childNodes as $child) {
-            // Vérifie si l'un des enfants est une balise autorisée
-			if ($child instanceof DOMElement && in_array($child->tagName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'p', 'span', 'a', 'button', 'img', 'input','table','ul','li','ol','dt','dd'])) {
-                // Ajoute les données de l'enfant dans le contenu
-                //$contents[] =extractElement($child);//[$child->tagName]; //extractElement($child);
-                
-
-                $isVerticalArragement=true;
-
+        // Sélection par défaut
+        $defaultSelection = formatText($elements[0]);
+        foreach ($options as $option) {
+            if ($option->hasAttribute('selected')) {
+                $defaultSelection = formatText($option->textContent);
+                break;
             }
         }
 
-        if($isVerticalArragement){
-            $elementHTML = $element->ownerDocument->saveHTML($element);
-            $tags = ['h1','h2','h3','h4', 'h5','h6','button','textarea','img','p', 'label', 'input']; //ne pas ajouter la balise a
-            $contents[]=extractHorizontalLyout($elementHTML, $tags,$html);
-        }
-
-        // Vérifie si le contenu n'est pas vide
-        if (!empty($contents)) {
-            // Détermine le type de disposition en fonction du tag de l'élément parent
-            $layoutType = "VerticalArrangement";
-
-            $elementData = [
-                '$Type' => $layoutType,
-                '$Name' => $element->tagName,//$element->getAttribute('name'),
-                '$AlignHorizontal' => $PositionHorizontal["Left"],
-                '$AlignVertical' => $PositionVertical["Top"],
-                //'$Image' => '', // Lien de l'image de fond (à compléter si nécessaire)
-                //'$Height' => "",
-                //'$Width' => "",
-                '$BackgroundColor' => "[255,255,255]",
-                'style'=>getStyle($element,$html)['style'],
-                '$Visible' => true,
-                '$Components' => $contents
-            ];
-
-            //Mise à jour des Styles
-            $elementData=setStyle($elementData["style"],$elementData);
-
-
-        }
+        $elementData = [
+            '$Type' => "Spinner",
+            //'$Name' => $element->getAttribute('name'),
+            '$ElementsFromString' => implode(',', $elements),
+            '$Selection' => $defaultSelection,
+            //'$HeightPercent' => 10,
+            '$WidthPercent' => 100,
+            //'$FontSize' => $defaultFontSize, // Taille de police par défaut
+            '$FontBold' => false,
+            //'$TextColor' => "",
+            //'$BackgroundColor' => "",
+            '$Visible' => true,
+        ];
+        
     }
+
+    //Mise à jour des Styles
+    $elementData=setStyle($elementData["style"],$elementData);
 
     return $elementData;
 }
+
+
+
+
 
 
 /* EXTRACT ALL COMPONENTS
@@ -316,7 +339,8 @@ function extractLyout($element,$html)
 *        $html    => Page html complet reçu : pour permettre d'analyser le style
 */
 function extractElement($element,$html)
-{
+{   
+    //echo "Balise $element->tagName\n";
     $elementData=null;
     if(($button=extractButton($element,$html))!=null){
         $elementData=$button;
@@ -328,6 +352,8 @@ function extractElement($element,$html)
         $elementData=$PasswordTextBox;
     }elseif(($Image=extractImage($element,$html))!=null){
         $elementData=$Image;
+    }elseif(($Select=extractSelectElements($element,$html))!=null){
+        $elementData=$Select;
     }
     
     return $elementData;
